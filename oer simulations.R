@@ -146,7 +146,7 @@ getSensitivity <- function(has.book = .6){
   sens <- c()
   for(y in 1:length(possible.ns)){
     for(i in 1:300){ # 300 = 3 SD. 
-      power <- simulateSingleExperiment(N = possible.ns[y], has.book = has.book, access.effect = i/100, sims = 100)
+      power <- simulateSingleExperiment(N = possible.ns[y], has.book = has.book, access.effect = i/100, sims = 1000)
       if(power >= .80){
         print(i)
         sens[y] <- i/100
@@ -156,6 +156,33 @@ getSensitivity <- function(has.book = .6){
   }
   return(sens)
 }
+
+getSensitivityBinary <- function(has.book = .6){
+  sens <- c()
+  U <- 3
+  for(y in 1:length(possible.ns)){
+    print(possible.ns[y])
+    print(U)
+    print('')
+    V <- seq(0, U, .01)
+    L <- 1
+    R <- length(V)
+    while (L < R) {
+      m <- floor((L + R) / 2)
+      power <- simulateSingleExperiment(N = possible.ns[y], has.book = has.book, access.effect = V[m], sims = 1000)
+      if (power < .8) {
+        L <- m+1
+      }
+      else if (power >= .8) {
+        R <- m
+      }
+    }
+    sens[y] <- V[L]
+    U <- V[L]
+  }
+  return(sens)
+}
+    
 
 runSens <- function(){
   sens_90 <- getSensitivity(has.book = .90)
