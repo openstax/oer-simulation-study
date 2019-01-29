@@ -3,7 +3,7 @@ library(truncnorm)
 library(gridExtra)
 
 #set working directory to location of folder
-setwd()
+setwd("~/GitHub/oer-simulation-study/")
 
 #based on this code
 #http://egap.org/content/power-analysis-simulations-r
@@ -115,27 +115,99 @@ evaluate_past_studies <- function(){
 }
 
 
-# create the plots
+# create the Simulation Plot
 results_1 <- read_csv(file = "simulation_results.csv")
-names(results_1) <- c("possible.ns","90%", "80%", "70%", "60%", "50%", "40%","0%")
+names(results_1) <- c("possible.ns","90%", "80%", "70%", "60%", "50%", "40%")
 rates <- c("0%","40%", "50%", "60%", "70%", "80%", "90%")
 
-for(i in 1:length(rates)){
-  plot <- results_1 %>% 
-    filter(possible.ns <= 5000) %>% 
-    gather(key = sim,value = "power",-possible.ns) %>%
-    filter(sim %in% rates[1:i]) %>% 
-    ggplot(., aes(x = possible.ns,y = power,group = sim)) +
-    geom_hline(yintercept = .8, linetype = 7,color = "tomato") + 
-    geom_point(aes(shape = sim), size = 3) +
-    geom_line(aes(linetype = sim)) +
-    ylim(0,1) +
-    scale_x_continuous(breaks = seq(from=0, to=5000, by= 500)) +
-    ylab("Probability of Rejecting Null (Power)")+ xlab("Sample Size (n)") +
-    # theme_minimal() + 
-    theme_classic()+
-    theme(aspect.ratio = 1) +
-    guides(shape=guide_legend(title="Access Rate"),
-           linetype = FALSE) 
-  ggsave(filename = paste0("plot",i,".png"),plot = plot,device = "png")
+plot1 <- results_1 %>% 
+  filter(possible.ns <= 5000) %>% 
+  gather(key = sim,value = "power",-possible.ns) %>% 
+  ggplot(., aes(x = possible.ns,y = power,group = sim)) +
+  geom_point(aes(shape = sim), size = 3) +
+  geom_line(aes(linetype = sim)) +
+  ylim(0,1) +
+  scale_x_continuous(breaks = seq(from=0, to=5000, by= 500)) +
+  ylab("Probability of Rejecting Null (Power)")+ xlab("Sample Size (n)") +
+  # theme_minimal() + 
+  theme_classic()+
+  theme(aspect.ratio = 1,
+        text = element_text(size = 10)) +
+  # theme( legend.position = "bottom",legend.direction = "horizontal") +
+  guides(shape=guide_legend(title="Access Rate"),
+         # guides(shape=guide_legend(expression(beta)),
+         linetype = FALSE)
+
+
+########### Sensitivity Analysis: ############
+# Find the minimum effect size to achieve 80% power
+# across varying sample sizes, increment d until power of 80% is achieved. 
+getSensitivity <- function(has.book = .6){
+  sens <- c()
+  for(y in 1:length(possible.ns)){
+    for(i in 1:300){ # 300 = 3 SD. 
+      power <- simulateSingleExperiment(N = possible.ns[y], has.book = has.book, access.effect = i/100, sims = 100)
+      if(power >= .80){
+        print(i)
+        sens[y] <- i/100
+        break
+      }
+    }
+  }
+  return(sens)
 }
+
+runSens <- function(){
+  sens_90 <- getSensitivity(has.book = .90)
+  sens_80 <- getSensitivity(has.book = .80)
+  sens_70 <- getSensitivity(has.book = .70)
+  sens_60 <- getSensitivity(has.book = .60)
+  sens_50 <- getSensitivity(has.book = .50)
+  sens_40 <- getSensitivity(has.book = .40)
+  sens_results <- data.frame(possible.ns,sens_90,sens_80,sens_70,sens_60,sens_50,sens_40)
+  write_csv(sens_results, path = "sensitivity_results.csv")
+}
+
+sens_results <- read_csv(file = "sensitivity_results.csv")
+names(sens_results) <- c("possible.ns","90%", "80%", "70%", "60%", "50%", "40%")
+plot_sens <- sens_results %>% 
+  filter(possible.ns <= 5000) %>% 
+  gather(key = sim,value = "ES",-possible.ns) %>% 
+  ggplot(., aes(x = possible.ns,y = ES,group = sim)) +
+  geom_point(aes(shape = sim), size = 3) +
+  geom_line(aes(linetype = sim)) +
+  ylim(0,2) +
+  scale_x_continuous(breaks = seq(from=0, to=5000, by= 500)) +
+  ylab("Minimum Effect Size")+ xlab("Sample Size (n)") +
+  # theme_minimal() + 
+  theme_classic()+
+  theme(aspect.ratio = 1,
+        text = element_text(size = 10)) +
+  # theme( legend.position = "bottom",legend.direction = "horizontal") +
+  guides(shape=guide_legend(title="Access Rate"),
+         # guides(shape=guide_legend(expression(beta)),
+         linetype = FALSE)
+
+
+
+
+
+# for(i in 1:length(rates)){
+#   plot <- results_1 %>% 
+#     filter(possible.ns <= 5000) %>% 
+#     gather(key = sim,value = "power",-possible.ns) %>%
+#     filter(sim %in% rates[1:i]) %>% 
+#     ggplot(., aes(x = possible.ns,y = power,group = sim)) +
+#     geom_hline(yintercept = .8, linetype = 7,color = "tomato") + 
+#     geom_point(aes(shape = sim), size = 3) +
+#     geom_line(aes(linetype = sim)) +
+#     ylim(0,1) +
+#     scale_x_continuous(breaks = seq(from=0, to=5000, by= 500)) +
+#     ylab("Probability of Rejecting Null (Power)")+ xlab("Sample Size (n)") +
+#     # theme_minimal() + 
+#     theme_classic()+
+#     theme(aspect.ratio = 1) +
+#     guides(shape=guide_legend(title="Access Rate"),
+#            linetype = FALSE) 
+#   ggsave(filename = paste0("plot",i,".png"),plot = plot,device = "png")
+# }
