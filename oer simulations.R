@@ -157,13 +157,13 @@ getSensitivity <- function(has.book = .6){
   return(sens)
 }
 
+# Implements a binary search through the space of d to speed things up
+# Also does a warm start to take advantage of the fact that power should be monontone non-increasing
+# As a consequence, make sure that possible.ns are always ordered from least to greatest!!!!
 getSensitivityBinary <- function(has.book = .6){
   sens <- c()
   U <- 3
   for(y in 1:length(possible.ns)){
-    print(possible.ns[y])
-    print(U)
-    print('')
     V <- seq(0, U, .01)
     L <- 1
     R <- length(V)
@@ -185,17 +185,18 @@ getSensitivityBinary <- function(has.book = .6){
     
 
 runSens <- function(){
-  sens_90 <- getSensitivity(has.book = .90)
-  sens_80 <- getSensitivity(has.book = .80)
-  sens_70 <- getSensitivity(has.book = .70)
-  sens_60 <- getSensitivity(has.book = .60)
-  sens_50 <- getSensitivity(has.book = .50)
-  sens_40 <- getSensitivity(has.book = .40)
+  sens_90 <- getSensitivityBinary(has.book = .90)
+  sens_80 <- getSensitivityBinary(has.book = .80)
+  sens_70 <- getSensitivityBinary(has.book = .70)
+  sens_60 <- getSensitivityBinary(has.book = .60)
+  sens_50 <- getSensitivityBinary(has.book = .50)
+  sens_40 <- getSensitivityBinary(has.book = .40)
   sens_results <- data.frame(possible.ns,sens_90,sens_80,sens_70,sens_60,sens_50,sens_40)
   write_csv(sens_results, path = "sensitivity_results.csv")
 }
 
 sens_results <- read_csv(file = "sensitivity_results.csv")
+sens_results[sens_results<-3] <- NA
 names(sens_results) <- c("possible.ns","90%", "80%", "70%", "60%", "50%", "40%")
 plot_sens <- sens_results %>% 
   filter(possible.ns <= 5000) %>% 
@@ -203,9 +204,9 @@ plot_sens <- sens_results %>%
   ggplot(., aes(x = possible.ns,y = ES,group = sim)) +
   geom_point(aes(shape = sim), size = 3) +
   geom_line(aes(linetype = sim)) +
-  ylim(0,2) +
   scale_x_continuous(breaks = seq(from=0, to=5000, by= 500)) +
-  ylab("Minimum Effect Size")+ xlab("Sample Size (n)") +
+  scale_y_continuous(breaks = seq(from=0, to=3, by= .5)) +
+  ylab("Minimum Effect Size (d)")+ xlab("Sample Size (n)") +
   # theme_minimal() + 
   theme_classic()+
   theme(aspect.ratio = 1,
@@ -214,10 +215,6 @@ plot_sens <- sens_results %>%
   guides(shape=guide_legend(title="Access Rate"),
          # guides(shape=guide_legend(expression(beta)),
          linetype = FALSE)
-
-
-
-
 
 # for(i in 1:length(rates)){
 #   plot <- results_1 %>% 
