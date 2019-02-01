@@ -139,14 +139,14 @@ plot1 <- results_1 %>%
          linetype = FALSE)
 
 
-########### Sensitivity Analysis: ############
+########### "Supplemental Sensitivity Analysis" ############
 # Find the minimum effect size to achieve 80% power
 # across varying sample sizes, increment d until power of 80% is achieved. 
 getSensitivity <- function(has.book = .6){
   sens <- c()
   for(y in 1:length(possible.ns)){
     for(i in 1:300){ # 300 = 3 SD. 
-      power <- simulateSingleExperiment(N = possible.ns[y], has.book = has.book, access.effect = i/100, sims = 1000)
+      power <- simulateSingleExperiment(N = possible.ns[y], has.book = has.book, access.effect = i/100, sims = 10000)
       if(power >= .80){
         print(i)
         sens[y] <- i/100
@@ -169,7 +169,7 @@ getSensitivityBinary <- function(has.book = .6){
     R <- length(V)
     while (L < R) {
       m <- floor((L + R) / 2)
-      power <- simulateSingleExperiment(N = possible.ns[y], has.book = has.book, access.effect = V[m], sims = 1000)
+      power <- simulateSingleExperiment(N = possible.ns[y], has.book = has.book, access.effect = V[m], sims = 10000)
       if (power < .8) {
         L <- m+1
       }
@@ -203,9 +203,9 @@ plot_sens <- sens_results %>%
   ggplot(., aes(x = possible.ns,y = ES,group = sim)) +
   geom_point(aes(shape = sim), size = 3) +
   geom_line(aes(linetype = sim)) +
-  ylim(0,2) +
+  ylim(0,3) +
   scale_x_continuous(breaks = seq(from=0, to=5000, by= 500)) +
-  ylab("Minimum Effect Size")+ xlab("Sample Size (n)") +
+  ylab("Minimum Effect Size (d)")+ xlab("Sample Size (n)") +
   # theme_minimal() + 
   theme_classic()+
   theme(aspect.ratio = 1,
